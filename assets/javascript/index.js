@@ -21,7 +21,22 @@
         iBody = new Image(),
         iFood = new Image(),
         aEat = new Audio(),
-        aDie = new Audio();
+        aDie = new Audio(),
+        lastUpdate = 0,
+        FPS = 0,
+        frames = 0,
+        acumDelta = 0,
+        x = 50,
+        y = 50;
+        
+    window.requestAnimationFrame = (function () {
+        return window.requestAnimationFrame ||
+            window.webkitRequestAnimationFrame ||
+            window.mozRequestAnimationFrame ||
+        function (callback) {
+            window.setTimeout(callback, 17);
+        };
+    }());
 
     document.addEventListener('keydown', function(evt) {
         lastPress = evt.which;
@@ -120,6 +135,7 @@
         food.y = random(canvas.height / 10 - 1) * 10;
         gameover = false;
         }
+        
 
     function paint(ctx) {
         var i = 0,
@@ -161,7 +177,8 @@
             }
             ctx.textAlign = 'left';
         }
-    
+
+        ctx.fillText('FPS: ' + FPS, 10, 10);
     }
 
     function act() {
@@ -250,18 +267,9 @@
         }
         
     }
-
-    function repaint() {
-        window.requestAnimationFrame(repaint);
-        paint(ctx);
-    }
-
-    /*function run() {
-        setTimeout(run, 50);
-        act();
-    }*/
-    function run(){
+    function run() {
         window.requestAnimationFrame(run);
+
         var now = Date.now(),
             deltaTime = (now - lastUpdate) / 1000;
         if (deltaTime > 1) {
@@ -276,10 +284,20 @@
             frames = 0;
             acumDelta -= 1;
         }
+
         act();
+        paint(ctx);
+        }
+    function repaint() {
+        window.requestAnimationFrame(repaint);
         paint(ctx);
     }
 
+    // function run() {
+    //     setTimeout(run, 50);
+    //     act();
+    // }
+    
     function init() {
         canvas = document.getElementById('canvas');
         ctx = canvas.getContext('2d');
