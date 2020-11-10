@@ -1,23 +1,28 @@
 /*jslint bitwise:true, es5: true */
 (function(window, undefined) {
     'use strict';
-    var canvas = null,
-        ctx = null,
-        lastPress = null,
-
-        KEY_LEFT = 37,
+    var KEY_LEFT = 37,
         KEY_UP = 38,
         KEY_RIGHT = 39,
         KEY_DOWN = 40,
         KEY_ENTER = 13, 
 
-        dir = 0,
+        canvas = null,
+        ctx = null,
+        buffer = null,
+        bufferCtx = null,
+        bufferScale = 1,
+        bufferOffsetX = 0,
+        bufferOffsetY = 0,
+        lastPress = null,
         pause = true,
-        body = [],
-        score = 0,
         gameover = true,
-        //wall = [],
+        fullscreen = false,
+        body = [],
         food = null,
+        dir = 0,
+        score = 0,
+        //wall = [],
         iBody = new Image(),
         iFood = new Image(),
         aEat = new Audio(),
@@ -39,6 +44,9 @@
     }());
 
     document.addEventListener('keydown', function(evt) {
+        if (evt.which >= 37 && evt.which <= 40) {
+            evt.preventDefault();
+        }
         lastPress = evt.which;
     }, false);
 
@@ -115,6 +123,21 @@
         return ~~(Math.random() * max);
     }
 
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        var w = window.innerWidth / buffer.width;
+        var h = window.innerHeight / buffer.height;
+        var bufferScale = Math.min(h, w);
+
+        // canvas.style.width = (canvas.width * scale) + 'px';
+        // canvas.style.height = (canvas.height * scale) + 'px';
+
+        bufferOffsetX = (canvas.width - (buffer.width * bufferScale)) / 2;
+        bufferOffsetY = (canvas.height - (buffer.height * bufferScale)) / 2;
+    }
+
     function canPlayOgg() {
         var aud = new Audio();
         if (aud.canPlayType('audio/ogg').replace(/no/, '')) {
@@ -123,6 +146,7 @@
             return false;
         }
     }
+
 
     function reset() {
         score = 0;
@@ -141,8 +165,8 @@
         var i = 0,
             l = 0;
         //Clean canvas
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#030';
+        ctx.fillRect(0, 0, buffer.width, buffer.height);
 
         //Draw player
         ctx.strokeStyle = '#0f0';
@@ -165,6 +189,7 @@
         //ctx.fillText('Last Press: ' + lastPress, 0, 20);
 
         //Draw Score
+        ctx.fillStyle = '#fff';
         ctx.fillText('Score: ' + score, 0, 10);
 
         //Draw pause
@@ -181,14 +206,23 @@
         ctx.fillText('FPS: ' + FPS, 10, 10);
     }
 
-    function act() {
-        var i,
-            l;
+    function act(deltaTime) {
+        x += 120 * deltaTime;
+        if (x > canvas.width) {
+            x = 0
+        }
+        var i = 0,
+            l = 0;
         if (!pause) {
             // GameOver Reset
             if (gameover) {
                 reset();
             }
+
+            // x += 6;
+            // if (x > canvas.width) {
+            //     x = 0;
+            // }
             // Move Body
             for (i = body.length - 1; i > 0; i -= 1) {
                 body[i].x = body[i - 1].x;
@@ -233,19 +267,13 @@
             if (body[0].y < 0) {
                 body[0].y = canvas.height;
             }
-            // Body Intersects
-            for (i = 2, l = body.length; i < l; i += 1) {
-                if (body[0].intersects(body[i])) {
-                gameover = true;
-                pause = true;
-                }
-            }
+        
             //Food intersects
             if (body[0].intersects(food)) {
                 body.push(new Rectangle(food.x, food.y, 10, 10));
                 score += 1;
-                food.x = random(canvas.width / 10 - 1) * 10;
-                food.y = random(canvas.height / 10 - 1) * 10;
+                food.x = random(buffer.width / 10 - 1) * 10;
+                food.y = random(buffer.height / 10 - 1) * 10;
                 aEat.play();
             }
             // // Wall Intersects
@@ -260,15 +288,37 @@
             //     }
             // }
             
+            // Body Intersects
+            for (i = 2, l = body.length; i < l; i += 1) {
+                if (body[0].intersects(body[i])) {
+                gameover = true;
+                pause = true;
+                aDie.play();
+                loadScene(highScoreScene);
+                }
+            }
         }
-        if (lastPress === KEY_ENTER) {
-            pause = !pause;
-            lastPress = null;            
+    if (lastPress === KEY_ENTER) {
+        pause = !pause;
+        lastPress = null;            
         }
-        
+       
     }
+
+    function repaint() {
+        window.requestAnimationFrame(repaint);
+        paint(bufferCtx);
+        //paint(ctx);
+
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        //ctx.drawImage(buffer, 0, 0, canvas.width, canvas.height);
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(buffer, bufferOffsetX, bufferOffsetY, buffer.width * bufferScale, buffer.height * bufferScale);
+    }
+        
     function run() {
-        window.requestAnimationFrame(run);
+        window.requestAnimationFrame(run)
 
         var now = Date.now(),
             deltaTime = (now - lastUpdate) / 1000;
@@ -285,13 +335,10 @@
             acumDelta -= 1;
         }
 
-        act();
+        act(deltaTime);
         paint(ctx);
         }
-    function repaint() {
-        window.requestAnimationFrame(repaint);
-        paint(ctx);
-    }
+
 
     // function run() {
     //     setTimeout(run, 50);
@@ -301,6 +348,13 @@
     function init() {
         canvas = document.getElementById('canvas');
         ctx = canvas.getContext('2d');
+        canvas.width = 600;
+        canvas.height = 300;
+        // // Load buffer
+        buffer = document.createElement('canvas');
+        bufferCtx = buffer.getContext('2d');
+        buffer.width = 300;
+        buffer.height = 150;
         //load assets
         iBody.src = 'assets/body.png';
         iFood.src = 'assets/fruit.png';
@@ -317,11 +371,10 @@
         // wall.push(new Rectangle(0, 490, 800, 10));
         // wall.push(new Rectangle(0, 10, 10, 500));
         // wall.push(new Rectangle(790, 0, 10, 500));
+        resize();
         run();
         repaint();
     }
-
-
-
     window.addEventListener('load', init, false);
+    window.addEventListener('resize', resize, false);
 }(window));
