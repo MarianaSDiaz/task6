@@ -27,7 +27,7 @@
         score = 0,
         iBody = new Image(),
         iFood = new Image(),
-        // iNewFood = new Image(),
+        iNewFood = new Image(),
         aEat = new Audio(),
         aDie = new Audio();
 
@@ -142,13 +142,13 @@
         // Load assets
         iBody.src = 'assets/body.png';
         iFood.src = 'assets/fruit.png';
-        // iNewFood.src = 'assets/newfruit.png';
+        iNewFood.src = 'assets/newfruit.png';
         aEat.src = 'assets/chomp.oga';
         aDie.src = 'assets/dies.oga';
 
         // Create food
         food = new Rectangle(80, 80, 10, 10);
-        // newFood = new Rectangle(80, 80, 10, 10);
+        newFood = new Rectangle(80, 80, 10, 10);
 
         // Create walls
         //wall.push(new Rectangle(50, 50, 10, 10));
@@ -199,8 +199,8 @@
         body.push(new Rectangle(40, 40, 10, 10));
         body.push(new Rectangle(0, 0, 10, 10));
         body.push(new Rectangle(0, 0, 10, 10));
-        // newFood.x = random(canvas.width / 10 - 1) * 10;
-        // newFood.y = random(canvas.height / 10 - 1) * 10;
+        newFood.x = random(canvas.width / 10 - 1) * 10;
+        newFood.y = random(canvas.height / 10 - 1) * 10;
         food.x = random(canvas.width / 10 - 1) * 10;
         food.y = random(canvas.height / 10 - 1) * 10;
         gameover = false;
@@ -229,7 +229,7 @@
         // Draw food
         ctx.strokeStyle = '#f00';
         food.drawImage(ctx, iFood);
-        // newFood.drawImage(ctx, iNewFood);
+        newFood.drawImage(ctx, iNewFood);
 
         // Draw score
         ctx.fillStyle = '#fff';
@@ -313,6 +313,25 @@
                 food.x = random(canvas.width / 10 - 1) * 10;
                 food.y = random(canvas.height / 10 - 1) * 10;
                 aEat.play();
+            }
+            if (body[0].intersects(newFood)) {
+                score += 10;
+                aEat.play
+                fetch(`https://jsonplaceholder.typicode.com/posts`, {method:'POST', body:score})
+                .then(function (response){
+                    console.log(response)
+                    console.log('Score sent successfully.');
+                })
+                .catch(function (error){
+                    console.log("Error trying to send the score");
+                });
+                var rand = random(10000)+5000;
+                newFood.x = 1000;
+                newFood.y = 1000;
+                setTimeout(function(){
+                    newFood.x = random(canvas.width / 10 - 1) * 10;
+                    newFood.y = random(canvas.height / 10 - 1) * 10;
+                }, rand);   
             }
            
             // Wall Intersects
